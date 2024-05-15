@@ -1,0 +1,21 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+dates = pd.date_range(start="2021-05-01", periods=52, freq='W')  
+predictions = np.random.normal(0.01, 0.02, len(dates))  # Simulating weekly predicted returns with some volatility
+
+# i'm converting this to a dataframe and i'm hoping this works
+predictions_df = pd.DataFrame(predictions, index=dates, columns=['Predicted Returns'])
+
+# volatility = standard dev
+volatility = predictions_df['Predicted Returns'].std()
+print("Volatility of Predictions (Weekly):", volatility)
+
+# rolling standard dev plot
+plt.figure(figsize=(14, 7))
+plt.subplot(211)
+plt.plot(predictions_df.index, predictions_df['Predicted Returns'], label='Predicted Returns')
+plt.title('Neural Network Predicted Returns')
+plt.legend()
+
