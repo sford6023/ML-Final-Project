@@ -1,0 +1,77 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+
+# Scale the train and test data
+scaler = StandardScaler()
+X_weighted_scaled_test = scaler.fit_transform(X_test)
+X_unweighted_scaled_test = scaler.fit_transform(X_test_uw)
+
+# Using LSTM model, create sequences first from the feature sets above
+def create_sequences(X, n_steps=10):
+    Xs = []
+    for i in range(n_steps, len(X)):
+        Xs.append(X[i-n_steps:i])
+    return np.array(Xs)
+
+n_steps = 10
+X_weighted_seq_test = create_sequences(X_weighted_scaled_test, n_steps)
+X_unweighted_seq_test = create_sequences(X_unweighted_scaled_test, n_steps)
+
+# Define two LSTM models
+def build_model(input_shape):
+    model = Sequential([
+        LSTM(50, activation='relu', input_shape=input_shape),
+        Dense(1)
+    ])
+model.compile(optimizer='adam', loss='mse')
+    return model
+
+# Assuming the models are already trained and ready for predictions
+predictions_weighted = model_weighted.predict(X_weighted_seq_test).flatten()
+predictions_unweighted = model_unweighted.predict(X_unweighted_seq_test).flatten()
+
+# Generate a date range for the test period (adjusted to match the number of predictions)
+start_date = '2021-05-01'
+end_date = '2024-05-01'
+dates = pd.date_range(start=start_date, end=end_date, freq='W')
+dates = dates[:min(len(predictions_weighted), len(predictions_unweighted))]
+
+# Create DataFrames for predictions
+df_weighted = pd.DataFrame({
+    'Date': dates,
+    'Predicted Weighted Returns': predictions_weighted[:len(dates)]
+})
+
+df_unweighted = pd.DataFrame({
+    'Date': dates,
+    'Predicted Unweighted Returns': predictions_unweighted[:len(dates)]
+})
+
+# Calculate the overall standard deviation (volatility) for the entire period
+weighted_volatility = df_weighted['Predicted Weighted Returns'].std()
+unweighted_volatility = df_unweighted['Predicted Unweighted Returns'].std()
+
+print(f'Average Predicted Weighted Volatility over 3 years: {weighted_volatility}')
+print(f'Average Predicted Unweighted Volatility over 3 years: {unweighted_volatility}')
+print(f'Difference: {unweighted_volatility - weighted_volatility}')
+
+# Plotting the predicted returns and their overall volatilities
+plt.figure(figsize=(14, 7))
+
+# Plotting weighted predicted returns
+plt.plot(df_weighted['Date'], df_weighted['Predicted Weighted Returns'], label='Predicted Weighted Returns', color='blue')
+
+# Plotting unweighted predicted returns
+plt.plot(df_unweighted['Date'], df_unweighted['Predicted Unweighted Returns'], label='Predicted Unweighted Returns', color='red')
+
+plt.title('Predicted Returns (Weighted and Unweighted) Over Time')
+plt.xlabel('Date')
+plt.ylabel('Returns')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
